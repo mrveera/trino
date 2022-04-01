@@ -28,7 +28,7 @@ import org.testng.annotations.Test;
 import java.util.List;
 
 import static com.google.common.collect.ImmutableList.toImmutableList;
-import static io.trino.plugin.iceberg.IcebergFileFormat.ORC;
+import static io.trino.plugin.iceberg.IcebergFileFormat.PARQUET;
 import static io.trino.plugin.iceberg.S3Util.deleteObjects;
 import static io.trino.testing.sql.TestTable.randomTableSuffix;
 import static io.trino.tpch.TpchTable.LINE_ITEM;
@@ -51,7 +51,7 @@ public class TestIcebergGlueConnectorTest
     @Parameters("s3.bucket")
     public TestIcebergGlueConnectorTest(String bucketName)
     {
-        super(ORC);
+        super(PARQUET);
         this.bucketName = requireNonNull(bucketName, "bucketName is null");
         this.schemaName = "iceberg_connector_test_" + randomTableSuffix();
     }
@@ -64,7 +64,7 @@ public class TestIcebergGlueConnectorTest
                 .setIcebergProperties(
                         ImmutableMap.of(
                                 "iceberg.catalog.type", "glue",
-                                "iceberg.file-format", ORC.name(),
+                                "iceberg.file-format", PARQUET.name(),
                                 "hive.metastore.glue.default-warehouse-dir", getBaseDirectory()))
                 .setSchemaInitializer(
                         SchemaInitializer.builder()
