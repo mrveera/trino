@@ -13,9 +13,11 @@
  */
 package io.trino.plugin.iceberg;
 
+import com.google.common.collect.ImmutableList;
 import io.trino.plugin.hive.HdfsEnvironment;
 import io.trino.testing.BaseConnectorSmokeTest;
 import io.trino.testing.TestingConnectorBehavior;
+import io.trino.testing.sql.TestTable;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Path;
@@ -36,6 +38,8 @@ public abstract class BaseIcebergConnectorSmokeTest
         extends BaseConnectorSmokeTest
 {
     protected final FileFormat format;
+
+    protected abstract String getMetadataDirectory(String tableName);
 
     public BaseIcebergConnectorSmokeTest(FileFormat format)
     {
@@ -93,23 +97,23 @@ public abstract class BaseIcebergConnectorSmokeTest
     public void testListInformationSchemaMetadataNotFound()
             throws Exception
     {
-        assertUpdate("CREATE TABLE test_metadata_not_found (col integer)");
+        try (TestTable table = new TestTable(getQueryRunner()::execute, "test_metadata_not_found", "(col integer)", ImmutableList.of())) {
+            HdfsEnvironment.HdfsContext context = new HdfsEnvironment.HdfsContext(getSession().toConnectorSession());
+            org.apache.hadoop.fs.Path metadataDir = new org.apache.hadoop.fs.Path(getMetadataDirectory(table.getName()));
+            FileSystem fileSystem = HDFS_ENVIRONMENT.getFileSystem(context, metadataDir);
+            org.apache.hadoop.fs.Path metadataFile = getMetadataJsonFile(fileSystem, metadataDir);
+            org.apache.hadoop.fs.Path renamedMetadataFile = new org.apache.hadoop.fs.Path(metadataFile + ".renamed");
 
-        HdfsEnvironment.HdfsContext context = new HdfsEnvironment.HdfsContext(getSession().toConnectorSession());
-        org.apache.hadoop.fs.Path metadataDir = new org.apache.hadoop.fs.Path(getMetadataDirectory("test_metadata_not_found"));
-        FileSystem fileSystem = HDFS_ENVIRONMENT.getFileSystem(context, metadataDir);
-        org.apache.hadoop.fs.Path metadataFile = getMetadataJsonFile(fileSystem, metadataDir);
-        org.apache.hadoop.fs.Path renamedMetadataFile = new org.apache.hadoop.fs.Path(metadataFile + ".renamed");
+            fileSystem.rename(metadataFile, renamedMetadataFile);
 
-        fileSystem.rename(metadataFile, renamedMetadataFile);
+            assertQueryFails("SELECT * FROM " + table.getName(), "Failed to (read file|open input stream for file): .*");
+            assertQuerySucceeds("" +
+                    "SELECT table_name FROM information_schema.tables " +
+                    "WHERE table_catalog = 'iceberg' AND table_schema = 'tpch' AND table_name = '" + table.getName() + "'");
 
-        assertQueryFails("SELECT * FROM test_metadata_not_found", "Failed to (read file|open input stream for file): .*");
-        assertQuerySucceeds("" +
-                        "SELECT table_name FROM information_schema.tables " +
-                        "WHERE table_catalog = 'iceberg' AND table_schema = 'tpch' AND table_name = 'test_metadata_not_found'");
-
-        // Rename to the original path so that we can clean up in Glue tests
-        fileSystem.rename(renamedMetadataFile, metadataFile);
+            // Rename to the original path so that we can clean up in Glue tests
+            fileSystem.rename(renamedMetadataFile, metadataFile);
+        }
     }
 
     private org.apache.hadoop.fs.Path getMetadataJsonFile(FileSystem fileSystem, org.apache.hadoop.fs.Path metadataDir)
@@ -126,16 +130,5 @@ public abstract class BaseIcebergConnectorSmokeTest
         }
         assertNotNull(metadataFile);
         return new org.apache.hadoop.fs.Path(metadataFile.toString());
-    }
-
-    protected String getMetadataDirectory(String tableName)
-    {
-        return getDistributedQueryRunner().getCoordinator().getBaseDataDir()
-                .resolve("iceberg_data")
-                .resolve(getSession().getSchema().orElseThrow())
-                .resolve(tableName)
-                .resolve("metadata")
-                .toFile()
-                .getPath();
     }
 }

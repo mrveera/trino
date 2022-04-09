@@ -45,7 +45,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Throwables.getCausalChain;
 import static com.google.common.collect.ImmutableList.toImmutableList;
 import static io.trino.plugin.hive.HiveType.toHiveType;
-import static io.trino.plugin.iceberg.IcebergErrorCode.ICEBERG_METADATA_NOT_FOUND;
+import static io.trino.plugin.iceberg.IcebergErrorCode.ICEBERG_INVALID_METADATA;
 import static io.trino.plugin.iceberg.IcebergUtil.getLocationProvider;
 import static java.lang.Integer.parseInt;
 import static java.lang.String.format;
@@ -240,7 +240,7 @@ public abstract class AbstractIcebergTableOperations
         }
         catch (Exception e) {
             if (getCausalChain(e).stream().anyMatch(AbstractIcebergTableOperations::isNotFoundError)) {
-                throw new TrinoException(ICEBERG_METADATA_NOT_FOUND, e);
+                throw new TrinoException(ICEBERG_INVALID_METADATA, e);
             }
             throw e;
         }
