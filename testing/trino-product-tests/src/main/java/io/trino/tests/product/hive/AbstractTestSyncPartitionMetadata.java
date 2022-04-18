@@ -239,7 +239,12 @@ public abstract class AbstractTestSyncPartitionMetadata
         onHdfs("-rm -f -r " + tableLocation);
         onHdfs("-mkdir -p " + tableLocation);
 
-        onTrino().executeQuery("CREATE TABLE " + tableName + " (payload bigint, col_x varchar, col_y varchar) WITH (format = 'ORC', partitioned_by = ARRAY[ 'col_x', 'col_y' ], external_location = '" + tableLocation + "')");
+        if (tableLocation.startsWith("abfs://")) {
+            onTrino().executeQuery("CREATE TABLE " + tableName + " (payload bigint, col_x varchar, col_y varchar) WITH (format = 'ORC', partitioned_by = ARRAY[ 'col_x', 'col_y' ], external_location = '" + tableLocation + "')");
+        }
+        else {
+            onTrino().executeQuery("CREATE TABLE " + tableName + " (payload bigint, col_x varchar, col_y varchar) WITH (format = 'ORC', partitioned_by = ARRAY[ 'col_x', 'col_y' ])");
+        }
         onTrino().executeQuery("INSERT INTO " + tableName + " VALUES (1, 'a', '1'), (2, 'b', '2')");
 
         String filePath = generateOrcFile();
