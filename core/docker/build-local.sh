@@ -29,11 +29,11 @@ docker build ${WORK_DIR} --pull --platform linux/arm64 -f Dockerfile -t ${CONTAI
 
 rm -r ${WORK_DIR}
 
-# Source common testing functions
-. container-test.sh
+# # Source common testing functions
+# . container-test.sh
 
-test_container ${CONTAINER}-amd64 linux/amd64
-test_container ${CONTAINER}-arm64 linux/arm64
+# test_container ${CONTAINER}-amd64 linux/amd64
+# test_container ${CONTAINER}-arm64 linux/arm64
 
 docker image inspect -f '🚀 Built {{.RepoTags}} {{.Id}}' ${CONTAINER}-amd64
 docker image inspect -f '🚀 Built {{.RepoTags}} {{.Id}}' ${CONTAINER}-arm64
