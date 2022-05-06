@@ -60,3 +60,15 @@ jobs:
           platforms: arm64
       - name: Test Docker Image
         run: core/docker/build-local.sh
+        
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+      
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: docker tag push 
+        run: docker tag trino:378-SNAPSHOT-amd64 docker.io/mrveera/trino:378-dc && docker push docker.io/mrveera/trino:378-dc
+        
