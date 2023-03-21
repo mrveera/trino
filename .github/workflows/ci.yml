@@ -70,5 +70,5 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
       - name: docker tag push
-        run: docker tag trino:410-amd64 docker.io/mrveera/trino:410-dc-jwt && docker push docker.io/mrveera/trino:410-dc-jwt
+        run: docker tag trino:410-arm64 docker.io/mrveera/trino:410-dc-jwt && docker push docker.io/mrveera/trino:410-dc-jwt
 
